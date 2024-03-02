@@ -69,3 +69,6 @@ void loop() {
   Serial.println("");
 }
 ```
+## Circuit diagram
+NOTE: this is snipped from a design that reads two meters via the same pins through two different relays. B == black wire, R == red wire.
+![circuit diagram](./circuit.png)
