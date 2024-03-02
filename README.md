@@ -33,7 +33,7 @@ NeptuneProtocol::reading reading;
   This function will enable relay, power up the meter, perform a reading and disable relay.
   
 # Example
-
+```
 Example useage on a esp32 D1 mini
 #include <NeptuneProtocol.h>
 int meter1_clock_pin = D5; // black
@@ -68,3 +68,4 @@ void loop() {
   }
   Serial.println("");
 }
+```
