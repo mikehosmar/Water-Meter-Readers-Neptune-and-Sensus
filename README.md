@@ -4,15 +4,18 @@ This is now a module to read data from the neptune e-coder, the rest is up to yo
 
 Assumption : the e-coder and arb meters assume that you are communicating over 5v (clock). as such the code is desigend to us a transistor as a switch and the clock signals are inverted because of this. 
 
-Following functions
 ## Configuration
+```
 NeptuneProtocol meter1(clock_pin, read_pin, relay_pin, pullup);
+```
  clock_pin : Pin that is connected to clock (black)
  read_pin : Pin connected to xmit on the neptune reader (Red)
  Relay_pin : Pin to enable the relay.
  pullup is regarding to enable (true) or disable (false) the interal pullup resister on the device.
 ## data structure
+```
 NeptuneProtocol::reading reading;
+```
  serialNum : serial number returned by the meter
  readVal   : what the meter returns either 6 or 8 digits depending on your type of meter.
  swver     : software version on the meter typically SW200
@@ -22,12 +25,16 @@ NeptuneProtocol::reading reading;
  The unknowns are related to checksums as well as leak or reverse flow. NDA blocked documentation requried.
 
 ## Functions
+```
  setup()
+```
   INPUT : nothing
   OUTPUT: nothing
   This simply 'sets up things. only need to call once.
-  
+
+ ```
  readMeter(&struct)
+```
   INPUT : struct that will used (pass by reference)
   OUTPUT: nothing (well struct passed in will be updated)
   This function will enable relay, power up the meter, perform a reading and disable relay.
