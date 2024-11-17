@@ -4,6 +4,14 @@
 #include <ArduinoOTA.h>
 #include "wifi_credentials.h"
 
+#include <AsyncTCP.h>
+#include <ESPAsyncWebServer.h>
+#include <WebSerial.h>
+// #include <MycilaWebSerial.h>
+
+AsyncWebServer server(80);
+unsigned long  last_print_time = millis();
+
 void setup()
 {
   Serial.begin(115200);
@@ -17,19 +25,6 @@ void setup()
     delay(5000);
     ESP.restart();
   }
-
-  // Port defaults to 3232
-  // ArduinoOTA.setPort(3232);
-
-  // Hostname defaults to esp3232-[MAC]
-  // ArduinoOTA.setHostname("water-meter");
-
-  // No authentication by default
-  // ArduinoOTA.setPassword("admin");
-
-  // Password can be set with it's md5 value as well
-  // MD5(admin) = 21232f297a57a5a743894a0e4a801fc3
-  // ArduinoOTA.setPasswordHash("21232f297a57a5a743894a0e4a801fc3");
 
   ArduinoOTA
       .onStart([]() {
@@ -76,6 +71,12 @@ void setup()
 
   ArduinoOTA.begin();
 
+  // WebSerial is accessible at "<IP Address>/webserial" in browser
+  server.onNotFound([](AsyncWebServerRequest* request) { request->redirect("/webserial"); });
+  WebSerial.begin(&server);
+
+  server.begin();
+
   Serial.println("Ready");
   Serial.print("IP address: ");
   Serial.println(WiFi.localIP());
@@ -83,5 +84,16 @@ void setup()
 
 void loop()
 {
+  // Print every 2 seconds (non-blocking)
+  if ((unsigned long)(millis() - last_print_time) > 30000)
+  {
+    WebSerial.print(F("IP address: "));
+    WebSerial.println(WiFi.localIP());
+    WebSerial.printf("Uptime: %lums\n", millis());
+    WebSerial.printf("Free heap: %" PRIu32 "\n", ESP.getFreeHeap());
+    last_print_time = millis();
+  }
+
+  WebSerial.loop();
   ArduinoOTA.handle();
 }
