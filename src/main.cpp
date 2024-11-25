@@ -11,11 +11,11 @@
 
 AsyncWebServer server(80);
 
-#define DEBUG_ESP_PORT WebSerial
+
 #include <NeptuneProtocol.h>
-int  meter1_clock_pin = SCK;   // black
-int  meter1_read_pin  = MISO;  // red
-int  meter1_relay_pin = 1;
+int  meter1_clock_pin = 2;   // black
+int  meter1_read_pin  = 3;  // red
+int  meter1_relay_pin = 4;
 bool pullup           = false;
 
 NeptuneProtocol          meter1(meter1_clock_pin, meter1_read_pin, meter1_relay_pin, pullup);

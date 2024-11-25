@@ -1,6 +1,9 @@
 #include "NeptuneProtocol.h"
 // #include <String>
 
+#include <WebSerial.h>
+#define DEBUG_ESP_PORT WebSerial
+
 #ifdef DEBUG_ESP_PORT
 #define DEBUG_MSG(...) DEBUG_ESP_PORT.printf(__VA_ARGS__)
 #else
@@ -14,7 +17,7 @@ void NeptuneProtocol::powerUp()
   digitalWrite(relay_pin, HIGH);      // send power to the npn meter
   digitalWrite(clock_pin, clock_ON);  // power on meter
   clkState = HIGH;
-  // delay(1000);
+  delay(1000);
 }
 
 void NeptuneProtocol::powerDown()
@@ -44,8 +47,9 @@ int NeptuneProtocol::readBit()
     {    // change state every 550uS - So we enter here if the output needs to be flipped.
       if (clkState == LOW)
       {  // First time in this will be false. so we jump down below.
-        clkState = HIGH;
+        delayMicroseconds(28);
         digitalWrite(clock_pin, clock_ON);
+        clkState = HIGH;
         // Need to wait here. to read the outout.
         // val = -2;
         // Read the signal in the middle here.
@@ -53,6 +57,7 @@ int NeptuneProtocol::readBit()
       }
       else
       {  // clkState was HIGH .. Ok. so now we are in the first iteration, set the clock low.
+        digitalWrite(clock_pin, clock_OFF);
         clkState = LOW;
         // digitalWrite(clock_pin, clock_OFF);
         // if (val == -2)
@@ -62,11 +67,10 @@ int NeptuneProtocol::readBit()
         //   readPreviousClkMicros = readCurrentMicros;  // set flip time.
         //   break;
         // }
-        digitalWrite(clock_pin, clock_OFF);
       }
-      readVar++;
-      if (readVar % 2000 == 0)
-        yield();
+      // readVar++;
+      // if (readVar % 2000 == 0)
+      //   yield();
       readPreviousClkMicros = readCurrentMicros;  // set flip time.
     }
     if (val != -1)
@@ -110,9 +114,9 @@ int NeptuneProtocol::readBit()
   return val;
 }
 
-char NeptuneProtocol::readByte()
+int16_t NeptuneProtocol::readByte()
 {
-  int maxDec = 200;  // can wait for this many idle bits
+  int maxDec = 1000;  // can wait for this many idle bits
   int bits[10];
 
   for (int i = 0; i < 10; ++i)
@@ -126,6 +130,7 @@ char NeptuneProtocol::readByte()
       --i;  // decrease the i here since we are at an idle bit.
       if (--maxDec <= 0)
       {
+        DEBUG_MSG("MaxDec hit!\n");
         return -1;  // we have hit over maxDec idle bits.
       }
     }
@@ -215,7 +220,7 @@ void NeptuneProtocol::readMeter(reading *meterRead)
   // //  delayMicroseconds(2000);
 
   unsigned long currentMillis     = millis();
-  unsigned long currentMicros     = micros();
+  unsigned long currentMicros     = 0;
   unsigned long previousMillis    = 0;  // For Delay between meter reads
   unsigned long previousClkMicros = 0;  // For TxClock timing
   readPreviousClkMicros           = 0;

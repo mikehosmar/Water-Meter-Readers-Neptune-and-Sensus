@@ -12,12 +12,15 @@ class NeptuneProtocol
   bool read_pin_pullup;
   int  buff[50];
 
-  unsigned long initBlip = 302;    // target 304
-  unsigned long powerUP  = 54971;  // 54910  54971??;
-  unsigned long blip     = 422;    // 423 from pulseview;
-  unsigned long iamhere  = 2451;   // 2451;
-  // unsigned long ClkTime  = 425;    // 431; 425 works for ARB meters
-  unsigned long ClkTime = 425;  // 431; 421=844 422=846 423=848   425=852
+  unsigned long low_offset = 31;
+  unsigned long high_offset = -41;
+
+  unsigned long initBlip = 302 + low_offset;    // target 304
+  unsigned long powerUP  = 54971 + high_offset;  // 54910  54971??;
+  unsigned long blip     = 422 + low_offset;    // 423 from pulseview;
+  unsigned long iamhere  = 2451 + high_offset;   // 2451;
+  unsigned long ClkTime  = 421;    // 431; 425 works for ARB meters
+  // unsigned long ClkTime = 425;  // 431; 421=844 422=846 423=848   425=852
 
   byte          clkState              = LOW;
   int           readVar               = 0;
@@ -27,15 +30,15 @@ class NeptuneProtocol
   // These are reversed due to inverting by NPN
   //  Clock ON should mean that the voltage to the meter is HIGH.
 
-  static const auto clock_ON  = LOW;
-  static const auto clock_OFF = HIGH;
-  //  static const auto clock_ON = HIGH;
-  //  static const auto clock_OFF = LOW;
+  // static const auto clock_ON  = LOW;
+  // static const auto clock_OFF = HIGH;
+   static const auto clock_ON = HIGH;
+   static const auto clock_OFF = LOW;
 
   void powerUp();
   void powerDown();
   int  readBit();
-  char readByte();
+  int16_t readByte();
   /* struct reading
    {
      String swver;
