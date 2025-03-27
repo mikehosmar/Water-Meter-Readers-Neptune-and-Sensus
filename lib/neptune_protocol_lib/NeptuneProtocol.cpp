@@ -17,7 +17,7 @@ void NeptuneProtocol::powerUp()
   digitalWrite(relay_pin, HIGH);      // send power to the npn meter
   digitalWrite(clock_pin, clock_ON);  // power on meter
   clkState = HIGH;
-  delay(1000);
+  delay(200);
 }
 
 void NeptuneProtocol::powerDown()
@@ -40,83 +40,83 @@ int NeptuneProtocol::readBit()
   // First time in a session the clock will be high.  Then we want to Turn it Low after the right time, wait, turn it
   // high, read data and return. PRE: Clock MUST be high to enter this area.
 
-  int val = -1;  // Setting val, our returnvalue here to be -1.
-  while (readVar < 2000)
-  {
-    if (readCurrentMicros - readPreviousClkMicros > ClkTime)
-    {    // change state every 550uS - So we enter here if the output needs to be flipped.
-      if (clkState == LOW)
-      {  // First time in this will be false. so we jump down below.
-        delayMicroseconds(28);
-        digitalWrite(clock_pin, clock_ON);
-        clkState = HIGH;
-        // Need to wait here. to read the outout.
-        // val = -2;
-        // Read the signal in the middle here.
-        val = digitalRead(read_pin);
-      }
-      else
-      {  // clkState was HIGH .. Ok. so now we are in the first iteration, set the clock low.
-        digitalWrite(clock_pin, clock_OFF);
-        clkState = LOW;
-        // digitalWrite(clock_pin, clock_OFF);
-        // if (val == -2)
-        // {
-        //   val = digitalRead(read_pin);
-        //   digitalWrite(clock_pin, clock_OFF);
-        //   readPreviousClkMicros = readCurrentMicros;  // set flip time.
-        //   break;
-        // }
-      }
-      // readVar++;
-      // if (readVar % 2000 == 0)
-      //   yield();
-      readPreviousClkMicros = readCurrentMicros;  // set flip time.
-    }
-    if (val != -1)
-    {  // bail if we have read something.
-      break;
-    }
-    readCurrentMicros = micros();
-  }
-
-  // int val           = -1;
-  // readCurrentMicros = micros();
-  // while (readVar < 10000)
+  // int val = -1;  // Setting val, our returnvalue here to be -1.
+  // while (readVar < 2000)
   // {
   //   if (readCurrentMicros - readPreviousClkMicros > ClkTime)
-  //   {  // change state every 550uS
+  //   {    // change state every 550uS - So we enter here if the output needs to be flipped.
   //     if (clkState == LOW)
-  //     {
-  //       clkState = HIGH;
+  //     {  // First time in this will be false. so we jump down below.
+  //       delayMicroseconds(28);
   //       digitalWrite(clock_pin, clock_ON);
-  //       val = digitalRead(read_pin);  // Read right after turning on the clock.
+  //       clkState = HIGH;
+  //       // Need to wait here. to read the outout.
+  //       // val = -2;
+  //       // Read the signal in the middle here.
+  //       val = digitalRead(read_pin);
   //     }
   //     else
-  //     {  // clkState was HIGH
-  //       clkState = LOW;
+  //     {  // clkState was HIGH .. Ok. so now we are in the first iteration, set the clock low.
   //       digitalWrite(clock_pin, clock_OFF);
-  //       if (val != -1)
-  //       {
-  //         //      readPreviousClkMicros = readCurrentMicros; // NOT SURE....
-
-  //         break;
-  //       }
+  //       clkState = LOW;
+  //       // digitalWrite(clock_pin, clock_OFF);
+  //       // if (val == -2)
+  //       // {
+  //       //   val = digitalRead(read_pin);
+  //       //   digitalWrite(clock_pin, clock_OFF);
+  //       //   readPreviousClkMicros = readCurrentMicros;  // set flip time.
+  //       //   break;
+  //       // }
   //     }
-  //     readVar++;
-  //     if (readVar % 2000 == 0)
-  //       yield();
-  //     readPreviousClkMicros = readCurrentMicros;
+  //     // readVar++;
+  //     // if (readVar % 2000 == 0)
+  //     //   yield();
+  //     readPreviousClkMicros = readCurrentMicros;  // set flip time.
+  //   }
+  //   if (val != -1)
+  //   {  // bail if we have read something.
+  //     break;
   //   }
   //   readCurrentMicros = micros();
   // }
+
+  int val           = -1;
+  readCurrentMicros = micros();
+  while (readVar < 10000)
+  {
+    if (readCurrentMicros - readPreviousClkMicros > ClkTime)
+    {  // change state every 550uS
+      if (clkState == LOW)
+      {
+        clkState = HIGH;
+        digitalWrite(clock_pin, clock_ON);
+        val = digitalRead(read_pin);  // Read right after turning on the clock.
+      }
+      else
+      {  // clkState was HIGH
+        clkState = LOW;
+        digitalWrite(clock_pin, clock_OFF);
+        if (val != -1)
+        {
+               readPreviousClkMicros = readCurrentMicros; // NOT SURE....
+
+          break;
+        }
+      }
+      readVar++;
+      if (readVar % 2000 == 0)
+        yield();
+      readPreviousClkMicros = readCurrentMicros;
+    }
+    readCurrentMicros = micros();
+  }
 
   return val;
 }
 
 int16_t NeptuneProtocol::readByte()
 {
-  int maxDec = 1000;  // can wait for this many idle bits
+  int maxDec = 200;  // can wait for this many idle bits
   int bits[10];
 
   for (int i = 0; i < 10; ++i)
