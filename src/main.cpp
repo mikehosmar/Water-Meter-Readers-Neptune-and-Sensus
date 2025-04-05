@@ -1,13 +1,16 @@
-#include <WiFi.h>
-#include <ESPmDNS.h>
-#include <WiFiUdp.h>
+// #include <WiFi.h>
+// #include <ESPmDNS.h>
+// #include <WiFiUdp.h>
 #include <ArduinoOTA.h>
 #include "wifi_credentials.h"
 
-#include <AsyncTCP.h>
+// #include <AsyncTCP.h>
 #include <ESPAsyncWebServer.h>
-#include <WebSerial.h>
+// #include <WebSerial.h>
 // #include <MycilaWebSerial.h>
+
+#define DEBUG_ESP_PORT Serial
+// WebSerial webSerial;
 
 AsyncWebServer server(80);
 
@@ -81,8 +84,8 @@ boolean laststate = false;
 #endif
 void setup()
 {
-  Serial.begin(115200);
-  Serial.println("Booting");
+  // Serial.begin(115200);
+  // Serial.println("Booting");
   WiFi.setHostname("water-meter");
   WiFi.mode(WIFI_STA);
   WiFi.begin(ssid, password);
@@ -93,33 +96,37 @@ void setup()
     ESP.restart();
   }
 
-  ArduinoOTA
-      .onStart([]() {
-        String type = (ArduinoOTA.getCommand() == U_FLASH) ? "sketch" : "filesystem";
-        Serial.println("Start updating " + type);
-      })
-      .onEnd([]() { Serial.println("\nEnd"); })
-      .onProgress([](unsigned int progress, unsigned int total) {
-        Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
-      })
-      .onError([](ota_error_t error) {
-        Serial.printf("Error[%u]: ", error);
-        if (error == OTA_AUTH_ERROR)
-          Serial.println("Auth Failed");
-        else if (error == OTA_BEGIN_ERROR)
-          Serial.println("Begin Failed");
-        else if (error == OTA_CONNECT_ERROR)
-          Serial.println("Connect Failed");
-        else if (error == OTA_RECEIVE_ERROR)
-          Serial.println("Receive Failed");
-        else if (error == OTA_END_ERROR)
-          Serial.println("End Failed");
-      });
+  // ArduinoOTA
+  //     .onStart([]() {
+  //       String type = (ArduinoOTA.getCommand() == U_FLASH) ? "sketch" : "filesystem";
+  //       // Serial.println("Start updating " + type);
+  //     })
+  //     .onEnd([]() { Serial.println("\nEnd"); })
+  //     .onProgress([](unsigned int progress, unsigned int total) {
+  //       Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
+  //     })
+  //     .onError([](ota_error_t error) {
+  //       Serial.printf("Error[%u]: ", error);
+  //       if (error == OTA_AUTH_ERROR)
+  //         Serial.println("Auth Failed");
+  //       else if (error == OTA_BEGIN_ERROR)
+  //         Serial.println("Begin Failed");
+  //       else if (error == OTA_CONNECT_ERROR)
+  //         Serial.println("Connect Failed");
+  //       else if (error == OTA_RECEIVE_ERROR)
+  //         Serial.println("Receive Failed");
+  //       else if (error == OTA_END_ERROR)
+  //         Serial.println("End Failed");
+  //     });
 
   ArduinoOTA.begin();
 
   server.onNotFound([](AsyncWebServerRequest* request) { request->redirect("/webserial"); });
-  WebSerial.begin(&server);
+  // webSerial.begin(&server);
+  // webSerial.onMessage([](const std::string& msg) {
+  //   webSerial.println("Received Data...");
+  //   webSerial.println(msg.c_str());
+  // });
   server.begin();
 
 #ifdef USE_CLASS
@@ -230,10 +237,10 @@ void loop()
   // Print every 30 seconds (non-blocking)
   if ((unsigned long)(millis() - last_print_time) > 30000)
   {
-    WebSerial.print(F("IP address: "));
-    WebSerial.println(WiFi.localIP());
-    WebSerial.printf("Uptime: %lums\n", millis());
-    WebSerial.printf("Free heap: %" PRIu32 "\n", ESP.getFreeHeap());
+    DEBUG_ESP_PORT.print(F("IP address: "));
+    DEBUG_ESP_PORT.println(WiFi.localIP());
+    DEBUG_ESP_PORT.printf("Uptime: %lums\n", millis());
+    DEBUG_ESP_PORT.printf("Free heap: %" PRIu32 "\n", ESP.getFreeHeap());
     last_print_time = millis();
   }
 
@@ -244,24 +251,24 @@ void loop()
 #ifdef USE_CLASS
     meter1reading  = {};  // Clear struct
     meter1.readMeter(&meter1reading);
-    WebSerial.println("Meter 1");
-    WebSerial.print(" Serial Number : ");
-    WebSerial.println(meter1reading.serialNum);
-    WebSerial.print(" Reading Value : ");
-    WebSerial.println(meter1reading.readVal);
-    WebSerial.print(" Software Ver  : ");
-    WebSerial.println(meter1reading.swver);
-    WebSerial.print(" Unknown 1     : ");
-    WebSerial.println(meter1reading.unknown1);
-    WebSerial.print(" Unknown 2     : ");
-    WebSerial.println(meter1reading.unknown2);
-    WebSerial.print(" Unknown 3     : ");
-    WebSerial.println(meter1reading.unknown3);
+    DEBUG_ESP_PORT.println("Meter 1");
+    DEBUG_ESP_PORT.print(" Serial Number : ");
+    DEBUG_ESP_PORT.println(meter1reading.serialNum);
+    DEBUG_ESP_PORT.print(" Reading Value : ");
+    DEBUG_ESP_PORT.println(meter1reading.readVal);
+    DEBUG_ESP_PORT.print(" Software Ver  : ");
+    DEBUG_ESP_PORT.println(meter1reading.swver);
+    DEBUG_ESP_PORT.print(" Unknown 1     : ");
+    DEBUG_ESP_PORT.println(meter1reading.unknown1);
+    DEBUG_ESP_PORT.print(" Unknown 2     : ");
+    DEBUG_ESP_PORT.println(meter1reading.unknown2);
+    DEBUG_ESP_PORT.print(" Unknown 3     : ");
+    DEBUG_ESP_PORT.println(meter1reading.unknown3);
 #else
     MeterRead();
 #endif
   }
 
-  WebSerial.loop();
+  // WebSerial.loop();
   ArduinoOTA.handle();
 }
