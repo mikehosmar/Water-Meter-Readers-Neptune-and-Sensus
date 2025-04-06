@@ -1,7 +1,7 @@
-// #include <WiFi.h>
+#include <WiFi.h>
 // #include <ESPmDNS.h>
 // #include <WiFiUdp.h>
-#include <ArduinoOTA.h>
+// #include <ArduinoOTA.h>
 #include "wifi_credentials.h"
 
 // #include <AsyncTCP.h>
@@ -12,9 +12,9 @@
 #define DEBUG_ESP_PORT Serial
 // WebSerial webSerial;
 
-AsyncWebServer server(80);
+// AsyncWebServer server(80);
 
-// #define USE_CLASS
+#define USE_CLASS
 
 #ifdef USE_CLASS
 #include <NeptuneProtocol.h>
@@ -36,7 +36,7 @@ NeptuneProtocol::reading meter1reading;
 
 
 // SPIClass * spi = NULL;
-// const int spiClk = 12000;
+// int spiClk = 120000;
 
 
 /////////////////////////////Read Meter declarations
@@ -73,6 +73,15 @@ byte command = 0; // Data command
 
 unsigned long previousMillis = 0; // Delay between Meter reads
 
+hw_timer_t *Timer0_Cfg = NULL;
+
+// #include <ESP_I2S.h>
+// const int buff_size = 128;
+// int available_bytes, read_bytes;
+// uint8_t buffer[buff_size];
+// I2SClass I2S;
+
+
 int bitRate = 420;
 
 // 1187hz. Seems more stable than 1200
@@ -81,20 +90,31 @@ boolean state = false;
 
 boolean laststate = false;
 
+void ARDUINO_ISR_ATTR Timer0_ISR()
+{
+    digitalWrite(TxClock, !digitalRead(TxClock));
+}
 #endif
 void setup()
 {
-  // Serial.begin(115200);
-  // Serial.println("Booting");
-  WiFi.setHostname("water-meter");
-  WiFi.mode(WIFI_STA);
-  WiFi.begin(ssid, password);
-  while (WiFi.waitForConnectResult() != WL_CONNECTED)
-  {
-    Serial.println("Connection Failed! Rebooting...");
-    delay(5000);
-    ESP.restart();
-  }
+  Serial.begin(115200);
+  Serial.println("Booting");
+  // WiFi.setHostname("water-meter");
+  // WiFi.mode(WIFI_STA);
+  // Serial.println(ssid);
+  // Serial.println(password);
+  // WiFi.begin(ssid, password);
+  // for(int i = 0; (i < 30 && WiFi.waitForConnectResult() != WL_CONNECTED); i++)
+  // {
+  //   Serial.print(".");
+  //   delay(1000);
+  // }
+  // Serial.println();
+  // if(WiFi.waitForConnectResult() != WL_CONNECTED)
+  // {
+  //   Serial.println("Connection Failed! Rebooting...");
+  //   ESP.restart();
+  // }
 
   // ArduinoOTA
   //     .onStart([]() {
@@ -119,15 +139,15 @@ void setup()
   //         Serial.println("End Failed");
   //     });
 
-  ArduinoOTA.begin();
+  // ArduinoOTA.begin();
 
-  server.onNotFound([](AsyncWebServerRequest* request) { request->redirect("/webserial"); });
+  // server.onNotFound([](AsyncWebServerRequest* request) { request->redirect("/webserial"); });
   // webSerial.begin(&server);
   // webSerial.onMessage([](const std::string& msg) {
   //   webSerial.println("Received Data...");
   //   webSerial.println(msg.c_str());
   // });
-  server.begin();
+  // server.begin();
 
 #ifdef USE_CLASS
   meter1.setup();
@@ -136,13 +156,17 @@ void setup()
   pinMode(TxClock, OUTPUT);      // clock
   pinMode(Relay, OUTPUT);
   // spi = new SPIClass(HSPI);
-  // spi->begin(TxClock,RxData, 5, 6); // HSPI
+  // spi->begin(TxClock,RxData); // HSPI
+  Timer0_Cfg = timerBegin(0, 80, true);
+  timerAttachInterrupt(Timer0_Cfg, &Timer0_ISR, true);
+  timerAlarmWrite(Timer0_Cfg, bitRate, true);
+  // timerAlarmEnable(Timer0_Cfg);
 
 #endif
 
   Serial.println("Ready");
-  Serial.print("IP address: ");
-  Serial.println(WiFi.localIP());
+  // Serial.print("IP address: ");
+  // Serial.println(WiFi.localIP());
 }
 
 #ifndef USE_CLASS
@@ -266,9 +290,64 @@ void loop()
     DEBUG_ESP_PORT.println(meter1reading.unknown3);
 #else
     MeterRead();
+    DEBUG_ESP_PORT.println("Meter Reading:");
+    for(int i = 0; i < 34; i++) {
+      DEBUG_ESP_PORT.print("Byte ");
+      DEBUG_ESP_PORT.print(i);
+      DEBUG_ESP_PORT.print(": ");
+      DEBUG_ESP_PORT.println(meterByte[i], HEX);
+    }
 #endif
   }
 
+  #ifndef USE_CLASS
+  digitalWrite(TxClock, LOW); // set up to put an initial low on clk line
+  digitalWrite(Relay, HIGH);
+  delay(200);
+
+  static bool output = true;
+  if (output) {
+    timerAlarmWrite(Timer0_Cfg, bitRate, true);
+    timerAlarmEnable(Timer0_Cfg);
+  } else {
+    timerAlarmDisable(Timer0_Cfg);
+  }
+
+  // read from serial
+  if (Serial.available() > 0) {
+    // check if the incoming byte is a valid command
+    char command = Serial.read();
+    if (command == 'u') {
+      // adjust SPI clock rate
+      bitRate += 10;
+      if (bitRate > 100000) {
+        bitRate = 1000;
+      }
+      Serial.printf("New Spi clock: %d\n", bitRate);
+    }
+    if (command == 'D') {
+      // adjust SPI clock rate
+      bitRate -= 10;
+      if (bitRate < 10) {
+        bitRate = 10;
+      }
+      Serial.printf("New Spi clock: %d\n", bitRate);
+    }
+    if (command == 'd') {
+      // adjust SPI clock rate
+      bitRate -= 1;
+      if (bitRate < 1) {
+        bitRate = 1;
+      }
+      Serial.printf("New Spi clock: %d\n", bitRate);
+    }
+    if(command == 'o') {
+      // turn on output
+      output = !output;
+      Serial.println("Output: " + String(output));
+    }
+  }
+#endif
   // WebSerial.loop();
-  ArduinoOTA.handle();
+  // ArduinoOTA.handle();
 }

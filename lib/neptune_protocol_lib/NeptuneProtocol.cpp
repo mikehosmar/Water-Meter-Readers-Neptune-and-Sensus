@@ -1,10 +1,10 @@
 #include "NeptuneProtocol.h"
 // #include <String>
 
-#include <MycilaWebSerial.h>
-#define DEBUG_ESP_PORT webSerial
+// #include <MycilaWebSerial.h>
+#define DEBUG_ESP_PORT Serial
 
-extern WebSerial webSerial;
+// extern WebSerial webSerial;
 
 #ifdef DEBUG_ESP_PORT
 #define DEBUG_MSG(...) DEBUG_ESP_PORT.printf(__VA_ARGS__)
